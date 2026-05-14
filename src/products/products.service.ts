@@ -48,4 +48,10 @@ export class ProductsService {
         }
         this.products.splice(productIndex, 1);
     }
+
+    addFillerProducts() {
+        this.newProduct("Laptop", "A high-performance laptop for work and gaming.", 1200);
+        this.newProduct("Smartphone", "A sleek smartphone with a powerful camera.", 800);
+        this.newProduct("Headphones", "Noise-cancelling headphones for immersive sound.", 200);
+    }
 }

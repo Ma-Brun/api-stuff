@@ -32,7 +32,11 @@ export class ProductsController {
         this.productsService.deleteProduct(name);
         return { message: 'Product deleted successfully' };
     }
-
+    @Post('add-filler')
+    addFillerProducts() {
+        this.productsService.addFillerProducts();
+        return { message: 'Filler products added successfully' };
+    }
 }
 
 
