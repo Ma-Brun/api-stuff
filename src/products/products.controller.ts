@@ -1,40 +1,39 @@
-import { Controller, Post, Body, Get, Param, Patch, Put, Delete } from '@nestjs/common';
+import { Controller, Post, Body, Get, Param, Patch, Delete } from '@nestjs/common';
 import { ProductsService } from './products.service';
 
 @Controller('products')
 export class ProductsController {
     constructor(private readonly productsService: ProductsService) {}
     @Post('add')
-    addProduct(
-        @Body('title') title: string,
+    async addProduct(
+        @Body('name') name: string,
         @Body('description') description: string,
         @Body('price') price: number,
     )
     {
-    const idOfProd = this.productsService.newProduct(title, description, price);
+    const idOfProd = await this.productsService.addProduct(name, description, price);
     return {id: idOfProd };
     }
     @Get()
-    getAllProducts() {
-        return this.productsService.getAllProducts();
+    async getAllProducts() {
+        return await this.productsService.getAllProducts();
     }
     @Get(":name")
-    getProduct(@Param('name') name: string) {
-        return this.productsService.getSingleProduct(name);
+    async getProduct(@Param('name') name: string) {
+        return await this.productsService.getSingleProduct(name);
     }
     @Patch(":name")
-    patchProduct(@Param('name') name: string, @Body('description') description: string, @Body('price') price: number) {
-        this.productsService.patchProduct(name, description, price);
-        return this.productsService.getSingleProduct(name);
+    async patchProduct(@Param('name') name: string, @Body('newName') newName: string, @Body('description') description: string, @Body('price') price: number) {
+        return await this.productsService.patchProduct(name, newName, description, price);
     }
     @Delete(":name")
-    deleteProduct(@Param('name') name: string) {
-        this.productsService.deleteProduct(name);
+    async deleteProduct(@Param('name') name: string) {
+        await this.productsService.deleteProduct(name);
         return { message: 'Product deleted successfully' };
     }
     @Post('add-filler')
-    addFillerProducts() {
-        this.productsService.addFillerProducts();
+    async addFillerProducts() {
+        await this.productsService.addFillerProducts();
         return { message: 'Filler products added successfully' };
     }
 }

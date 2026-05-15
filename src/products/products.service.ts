@@ -1,57 +1,75 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, Injectable, NotFoundException } from '@nestjs/common';
 import { Product } from './product.model';
+import { InjectModel } from '@nestjs/mongoose';
+import { Model } from 'mongoose';
+
 @Injectable()
 export class ProductsService {
-    private products: Product[] = [];
-
-    newProduct(name: string, description: string, price: number) {
-        const id = new Date().getTime();
-        const newProd = new Product(id, name, description, price);
-        this.products.push(newProd);
-        return id;
+    constructor (@InjectModel('Product') private readonly productModel: Model<Product>) {}
+    
+    async addProduct(name: string, description: string, price: number) {
+        const newProd = new this.productModel({ name, description, price });
+        const result = await newProd.save();
+        return result.id;
     }
-    getAllProducts() {
-        return [...this.products];
+    async getAllProducts() {
+        const products = await this.productModel.find();
+        return products.map((product) => ({
+            name: product.name,
+            description: product.description,
+            price: product.price,
+        }));
     }
 
-    getSingleProduct(name: string) {
-        if (!this.products.find((prod) => prod.name === name)) {
+    async getSingleProduct(name: string) {
+        const product = await this.productModel.findOne({ name });
+
+        if (!product) {
             throw new NotFoundException("Product not found");
         }
-        else {
-        return {...this.products.find((prod) => prod.name === name)};}
-    }
-    patchProduct(name: string, description: string, price: number) {
-        const productIndex = this.products.findIndex((prod) => prod.name === name);
 
-        if (productIndex === -1) {
+        return { name: product.name, description: product.description, price: product.price };
+    }
+    async patchProduct(name: string, newName: string, description: string, price: number) {
+        if (newName === undefined && description === undefined && price === undefined) {
+            throw new BadRequestException("No fields to update");
+        }
+
+        const updateData: Partial<Product> = {};
+        if (newName !== undefined) {
+            updateData.name = newName;
+        }
+        if (description !== undefined) {
+            updateData.description = description;
+        }
+        if (price !== undefined) {
+            updateData.price = price;
+        }
+
+        const updatedProduct = await this.productModel.findOneAndUpdate(
+            { name },
+            updateData,
+            { returnDocument: 'after' },
+        );
+
+        if (!updatedProduct) {
             throw new NotFoundException("Product not found");
         }
-        else {
-            if (description !== undefined) {                    
-                this.products[productIndex].description = description;
-            }
-            if (price !== undefined) {
-                this.products[productIndex].price = price;
-            }
-            if (description === undefined && price === undefined) {
-                throw new NotFoundException("No fields to update");
-            }
-            return {...this.products[productIndex]};
-        }
+
+        return updatedProduct;
     }
 
-    deleteProduct(name: string) {
-        const productIndex = this.products.findIndex((prod) => prod.name === name);
-        if (productIndex === -1) {
+    async deleteProduct(name: string) {
+        const result = await this.productModel.deleteOne({ name });
+
+        if (result.deletedCount === 0) {
             throw new NotFoundException("Product not found");
         }
-        this.products.splice(productIndex, 1);
     }
 
-    addFillerProducts() {
-        this.newProduct("Laptop", "A high-performance laptop for work and gaming.", 1200);
-        this.newProduct("Smartphone", "A sleek smartphone with a powerful camera.", 800);
-        this.newProduct("Headphones", "Noise-cancelling headphones for immersive sound.", 200);
+    async addFillerProducts() {
+        await this.addProduct("Laptop", "A high-performance laptop for work and gaming.", 1200);
+        await this.addProduct("Smartphone", "A sleek smartphone with a powerful camera.", 800);
+        await this.addProduct("Headphones", "Noise-cancelling headphones for immersive sound.", 200);
     }
 }
